@@ -170,7 +170,7 @@ How to install third party dependencies will vary depending on the linux distro 
 **Ubuntu:**
 ```console  
   sudo apt install libglew-dev 
-  sudo apt install libglfw-dev 
+  sudo apt install libglfw3-dev 
   sudo apt install libglm-dev
 ```
 
