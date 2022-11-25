@@ -13,16 +13,14 @@
  * \param x2 - the x-coordinate of the second vertex
  * \param y2 - the y-coordinate of the second vertex
  */
-LineRasterizer::LineRasterizer(int x1, int y1, int x2, int y2)
-{
+LineRasterizer::LineRasterizer(int x1, int y1, int x2, int y2) {
     this->initialize_line(x1, y1, x2, y2);
 }
 
 /*
  * Destroys the current instance of the line rasterizer
  */
-LineRasterizer::~LineRasterizer()
-{}
+LineRasterizer::~LineRasterizer() {}
 
 /*
  * Initializes the LineRasterizer with a new line
@@ -31,8 +29,7 @@ LineRasterizer::~LineRasterizer()
  * \param x2 - The x-coordinate of the second vertex
  * \param y2 - The y-coordinate of the second vertex
  */
-void LineRasterizer::Init(int x1, int y1, int x2, int y2)
-{
+void LineRasterizer::Init(int x1, int y1, int x2, int y2) {
     this->initialize_line(x1, y1, x2, y2);
 }
 
@@ -40,16 +37,14 @@ void LineRasterizer::Init(int x1, int y1, int x2, int y2)
  * Checks if there are fragments/pixels of the line ready for use
  * \return true if there are more fragments of the line, else false is returned
  */
-bool LineRasterizer::MoreFragments() const
-{
+bool LineRasterizer::MoreFragments() const {
     return this->valid;
 }
 
 /*
  * Computes the next fragment of the line
  */
-void LineRasterizer::NextFragment()
-{
+void LineRasterizer::NextFragment() {
     // Run the innerloop once
     // Dereference the pointer to the private member function 
     // It looks strange; but this is the way it is done!
@@ -59,8 +54,7 @@ void LineRasterizer::NextFragment()
 /*
  * Returns a vector which contains all the pixels of the line
  */
-std::vector<glm::vec3> LineRasterizer::AllFragments()
-{
+std::vector<glm::vec3> LineRasterizer::AllFragments() {
     // std::cout << "LineRasterizer::AllFragments(): Not implemented yet!" << std::endl;
     
     std::vector<glm::vec3> points;
@@ -80,8 +74,7 @@ std::vector<glm::vec3> LineRasterizer::AllFragments()
  * else a "runtime_error" exception is thrown
  * \return The coordinates of the current line fragment/pixel
  */
-glm::vec3 LineRasterizer::Fragment() const
-{
+glm::vec3 LineRasterizer::Fragment() const {
     return glm::vec3(float(this->x()), float(this->y()), 0.0f);
 }
 
@@ -91,8 +84,7 @@ glm::vec3 LineRasterizer::Fragment() const
  * else a "runtime_error" exception is thrown
  * \return The x-coordinate of the current line fragment/pixel
  */
-int LineRasterizer::x() const
-{
+int LineRasterizer::x() const {
     if (!this->valid) {
         throw std::runtime_error("LineRasterizer::x(): Invalid State");
     }
@@ -105,8 +97,7 @@ int LineRasterizer::x() const
  * else a "runtime_error" exception is thrown
  * \return The y-coordinate of the current line fragment/pixel
  */
-int LineRasterizer::y() const
-{
+int LineRasterizer::y() const {
     if (!this->valid) {
         throw std::runtime_error("LineRasterizer::y(): Invalid State");
     }
