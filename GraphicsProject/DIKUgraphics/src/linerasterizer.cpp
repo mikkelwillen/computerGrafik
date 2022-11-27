@@ -116,34 +116,34 @@ int LineRasterizer::y() const {
  * Initializes the LineRasterizer with the two vertices
  */
 void LineRasterizer::initialize_line(int x1, int y1, int x2, int y2) {
-    this->x_start = x1;
-    this->y_start = y1;
+    this->x_start   = x1;
+    this->y_start   = y1;
 
-    this->x_stop  = x2;
-    this->y_stop  = y2;
+    this->x_stop    = x2;
+    this->y_stop    = y2;
     
     this->x_current = this->x_start;
     this->y_current = this->y_start;
 
-    this->dx      = x2 - x1;
-    this->dy      = y2 - y1;
+    this->dx        = x2 - x1;
+    this->dy        = y2 - y1;
 
-    this->abs_2dx = std::abs(dx) << 1;
-    this->abs_2dy = std::abs(dy) << 1;
+    this->abs_2dx   = std::abs(dx) << 1;
+    this->abs_2dy   = std::abs(dy) << 1;
     
-    this->x_step  = (dx < 0) ? -1 : 1;
-    this->y_step  = (dy < 0) ? -1 : 1;
+    this->x_step    = (dx < 0) ? -1 : 1;
+    this->y_step    = (dy < 0) ? -1 : 1;
 
     if (this->abs_2dx > this->abs_2dy) {
         this->left_right = (this->x_step > 0);
-        this->d = this->abs_2dy - (this->abs_2dx >> 1);
-        this->valid = (this->x_start != this->x_stop);
-        this->innerloop = &LineRasterizer::x_dominant_innerloop;
+        this->d          = this->abs_2dy - (this->abs_2dx >> 1);
+        this->valid      = (this->x_start != this->x_stop);
+        this->innerloop  = &LineRasterizer::x_dominant_innerloop;
     } else {
         this->left_right = (this->y_step > 0);
-        this->d = this->abs_2dx - (this->abs_2dy >> 1);
-        this->valid = (this->y_start != this->y_stop);
-        this->innerloop = &LineRasterizer::y_dominant_innerloop;
+        this->d          = this->abs_2dx - (this->abs_2dy >> 1);
+        this->valid      = (this->y_start != this->y_stop);
+        this->innerloop  = &LineRasterizer::y_dominant_innerloop;
     }
 }
 
