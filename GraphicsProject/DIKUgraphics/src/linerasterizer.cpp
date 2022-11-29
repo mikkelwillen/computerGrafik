@@ -64,6 +64,13 @@ std::vector<glm::vec3> LineRasterizer::AllFragments() {
 
     glm::vec3 stoppoint(this->x_stop, this->y_stop, 0.0f);
     points.push_back(stoppoint);
+
+    while(this->valid) {
+        this->NextFragment();
+        if(this->valid) {
+            points.push_back(this->Fragment());
+        }
+    }
     
     return points;
 }
