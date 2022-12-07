@@ -4,25 +4,26 @@
  * \class triangle_rasterizer
  * A class which scanconverts a triangle. It computes the pixels such that they are inside the triangle.
  */ 
-triangle_rasterizer::triangle_rasterizer(int x1, int y1, int x2, int y2, int x3, int y3) : valid(false)
-{
+triangle_rasterizer::triangle_rasterizer(int x1, int y1, int x2, int y2, int x3, int y3) : valid(false) {
     this->initialize_triangle(x1, y1, x2, y2, x3, y3);
 }
 
 /*
  * Destroys the current instance of the triangle rasterizer
  */
-triangle_rasterizer::~triangle_rasterizer()
-{}
+triangle_rasterizer::~triangle_rasterizer() {
+}
 
 /*
  * Returns a vector which contains alle the pixels inside the triangle
  */
-std::vector<glm::vec3> triangle_rasterizer::all_pixels()
-{
+std::vector<glm::vec3> triangle_rasterizer::all_pixels() {
     std::vector<glm::vec3> points;
 
-    std::cout << "triangle_rasterizer::all_pixels(): Not implemented yet!" << std::endl;
+    while(this->more_fragments()) {
+        points.push_back(glm::vec3(float(this->x()), float(this->y()), 0.0f));
+        this->next_fragment();
+    }
     
     return points;
 }
@@ -31,17 +32,32 @@ std::vector<glm::vec3> triangle_rasterizer::all_pixels()
  * Checks if there are fragments/pixels inside the triangle ready for use
  * \return true if there are more fragments in the triangle, else false is returned
  */
-bool triangle_rasterizer::more_fragments() const
-{
+bool triangle_rasterizer::more_fragments() const {
     return this->valid;
 }
 
 /*
  * Computes the next fragment inside the triangle
  */
-void triangle_rasterizer::next_fragment()
-{
-    std::cout << "triangle_rasterizer::next_fragment(): Not implemented yet!" << std::endl;
+void triangle_rasterizer::next_fragment() {
+    if(this->x_current < this->x_stop) {
+        this->x_current += 1;
+    } else {
+        this->leftedge.next_fragment();
+        this->rightedge.next_fragment();
+        while(this->leftedge.more_fragments() && 
+             (this->leftedge.x() >= this->rightedge.x())) {
+            this->leftedge.next_fragment();
+            this->rightedge.next_fragment();
+        }
+        this->valid = this->leftedge.more_fragments();
+        if(this->valid) {
+            this->x_start   = this->leftedge.x();
+            this->x_current = this->x_start;
+            this->x_stop    = this->rightedge.x() - 1;
+            this->y_current = this->leftedge.y();
+        }
+    }
 }
 
 /*
@@ -50,8 +66,7 @@ void triangle_rasterizer::next_fragment()
  * else a "runtime_error" exception is thrown
  * \return The x-coordinate of the current triangle fragment/pixel
  */
-int triangle_rasterizer::x() const
-{
+int triangle_rasterizer::x() const {
     if (!this->valid) {
         throw std::runtime_error("triangle_rasterizer::x(): Invalid State/Not Initialized");
     }
@@ -64,8 +79,7 @@ int triangle_rasterizer::x() const
  * else a "runtime_error" exception is thrown
  * \return The y-coordinate of the current triangle fragment/pixel
  */
-int triangle_rasterizer::y() const
-{
+int triangle_rasterizer::y() const {
     if (!this->valid) {
         throw std::runtime_error("triangle_rasterizer::y(): Invalid State/Not Initialized");
     }
@@ -81,21 +95,61 @@ int triangle_rasterizer::y() const
  * \param x3 - the x-coordinate of the third vertex
  * \param y3 - the y-coordinate of the third vertex
  */
-void triangle_rasterizer::initialize_triangle(int x1, int y1, int x2, int y2, int x3, int y3)
-{
-    std::cout << "triangle_rasterizer::initialize_triangle(int, int, int, int, int, int): Not implemented yet!" << std::endl;
+void triangle_rasterizer::initialize_triangle(int x1, int y1, int x2, int y2, int x3, int y3) {
+    this->ivertex[0] = glm::ivec2(x1, y1);
+    this->ivertex[1] = glm::ivec2(x2, y2);
+    this->ivertex[2] = glm::ivec2(x3, y3);
+
+    this->lower_left = this->LowerLeft();
+    this->upper_left = this->UpperLeft();
+    this->the_other  = 3 - lower_left - upper_left;
+
+    glm::ivec2 ll = this->ivertex[this->lower_left];
+    glm::ivec2 ul = this->ivertex[this->upper_left];
+    glm::ivec2 ot = this->ivertex[this->the_other];
+
+    glm::ivec2 e1(ul - ll);
+    glm::ivec2 e2(ot - ll);
+
+    int z_component_of_e1xe2 = e1.x * e2.y - e1.y * e2.x;
+
+    if (z_component_of_e1xe2 != 0) {
+        if (z_component_of_e1xe2 > 0) {
+            this->leftedge.init(ll.x, ll.y, ot.x, ot.y, ul.x, ul.y);
+            this->rightedge.init(ll.x, ll.y, ul.x, ul.y);
+        } else {
+            this->leftedge.init(ll.x, ll.y, ul.x, ul.y);
+            this->rightedge.init(ll.x, ll.y, ot.x, ot.y, ul.x, ul.y);
+        }
+
+        this->x_start   = this->leftedge.x();
+        this->y_start   = this->leftedge.y();
+        this->x_current = this->x_start;
+        this->y_current = this->y_start;
+        this->x_stop    = this->rightedge.x() - 1;
+        this->y_stop    = this->ivertex[this->upper_left].y;
+
+        this->valid = (this->x_current <= this->x_stop);
+        if(!this->valid) {
+            this->next_fragment();
+        }
+    }
 }
 
 /*
  * Computes the index of the lower left vertex in the array ivertex
  * \return the index in the vertex table of the lower left vertex
  */
-int triangle_rasterizer::LowerLeft()
-{
+int triangle_rasterizer::LowerLeft() {
     int ll = 0;
+    for(int i = ll + 1; i < 3; ++i) {
+        if ((this->ivertex[i].y <  this->ivertex[ll].y) || 
+           ((this->ivertex[i].y == this->ivertex[ll].y) && 
+            (this->ivertex[i].x <  this->ivertex[ll].x))) {
+            ll = i;
+        }
+    }
 
-    std::cout << "triangle_rasterizer::LowerLeft(): Not implemented yet!" << std::endl;
-    
     return ll;
 }
 
@@ -103,11 +157,15 @@ int triangle_rasterizer::LowerLeft()
  * Computes the index of the upper left vertex in the array ivertex
  * \return the index in the vertex table of the upper left vertex
  */
-int triangle_rasterizer::UpperLeft()
-{
+int triangle_rasterizer::UpperLeft() {
     int ul = 0;
-
-     std::cout << "triangle_rasterizer::UpperLeft(): Not implemented yet!" << std::endl;
+    for(int i = ul + 1; i < 3; ++i) {
+        if ((this->ivertex[i].y >  this->ivertex[ul].y) || 
+           ((this->ivertex[i].y == this->ivertex[ul].y) && 
+            (this->ivertex[i].x <  this->ivertex[ul].x))) {
+            ul = i;
+        }
+    }
     
     return ul;
 }
