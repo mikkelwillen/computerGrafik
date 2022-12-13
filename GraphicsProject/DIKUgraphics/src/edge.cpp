@@ -153,9 +153,6 @@ bool edge_rasterizer::init_edge(int x1, int y1, int x2, int y2) {
     this->Accumulator = (x_step > 0) ? Denominator : 1;
 
     return (this->valid = (this->y_current < this->y_stop));
-
-    
-    return true;
 }
 
 /*
