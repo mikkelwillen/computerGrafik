@@ -236,7 +236,8 @@ glm::mat4x4 Camera::InvCurrentTransformationMatrix()
     //std::cout << "Camera::InvCurrentTransformationMatrix(): Not implemented yet!" << std::endl;
     this->invcurrenttransformationmatrix = InvViewOrientation() * InvViewProjection() * InvWindowViewport();
 
-    return this->invcurrenttransformationmatrix;
+    return
+    this->invcurrenttransformationmatrix;
 }
 
 /*

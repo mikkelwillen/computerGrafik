@@ -35,7 +35,7 @@ Camera::Camera()
     this->invcurrenttransformationmatrix = glm::mat4x4(1.0f);
 }
 
-/*
+/* 
  * Parameterized constructor, creates a camere with the parameteres given.
  * \param vrp - a vector which specifies the View Reference Point in world coordinates.
  * \param vpn - a vector which specifies the View Plane Normal in world coordinates.
@@ -45,10 +45,10 @@ Camera::Camera()
  * \param upper_right_window - a vector which specifies the upper right corner of the window in eye coordinates.
  * \param front_plane - the z-coordinate of the front clipping plane, relative to vrp, i.e. in eye coordinates.
  * \param back_plane - the z-coordinate of the back clipping plane, relative to vrp, i.e. in eye coordinates.
- * \param x_viewport - the x-coordinate of the viewport on the screen.
- * \param y_viewport - the y-coordinate of the viewport on the screen.
- * \param viewport_width - the width of the viewport on the screen.
- * \param viewport_height - the height of the viewport on the screen.
+ * \param x_viewport - the x-coordinate of the viewport on the screen in NDC coordinates.
+ * \param y_viewport - the y-coordinate of the viewport on the screen in NDC coordinates.
+ * \param viewport_width - the width of the viewport on the screen in NDC coordinates.
+ * \param viewport_height - the height of the viewport on the screen in NDC coordinates.
  */
 Camera::Camera(glm::vec3 const& vrp, glm::vec3 const& vpn, glm::vec3 const& vup, glm::vec3 const& prp,
                glm::vec2 const& lower_left_window, glm::vec2 const& upper_right_window,
@@ -86,7 +86,7 @@ Camera::Camera(glm::vec3 const& vrp, glm::vec3 const& vpn, glm::vec3 const& vup,
     this->currenttransformationmatrix    = glm::mat4x4(1.0f);
     this->invcurrenttransformationmatrix = glm::mat4x4(1.0f);
 }
-
+ 
 /*
  * Copy constructor, creates a copy of its parameter.
  * \param camera - the camera object which shuld be copied.
@@ -215,29 +215,20 @@ glm::mat4x4 Camera::InvWindowViewport() const
 /*
  * \return the current transformation matrix = WindowViewport() * ViewProjection() * ViewOrientation().
  */
-glm::mat4x4 Camera::CurrentTransformationMatrix()
-{
-    //std::cout << "Camera::CurrentTransformationMatrix(): Not implemented yet!" << std::endl;
-
-
-    this->currenttransformationmatrix =  WindowViewport() * ViewProjection() * ViewOrientation();
-
+glm::mat4x4 Camera::CurrentTransformationMatrix() {
+    this->currenttransformationmatrix = WindowViewport() * ViewProjection() * ViewOrientation();
+    
     return this->currenttransformationmatrix;
 }
 
 /*
- * \return the inverse of the current transformation
+ * \return the inverse of the current transformation 
  * matrix = InvViewOrientation() * InvViewProjection() * InvWindowViewport().
  */
-glm::mat4x4 Camera::InvCurrentTransformationMatrix()
-{
+glm::mat4x4 Camera::InvCurrentTransformationMatrix() {
+    this->invcurrenttransformationmatrix =  InvViewOrientation() * InvViewProjection() * InvWindowViewport();
 
-
-    //std::cout << "Camera::InvCurrentTransformationMatrix(): Not implemented yet!" << std::endl;
-    this->invcurrenttransformationmatrix = InvViewOrientation() * InvViewProjection() * InvWindowViewport();
-
-    return
-    this->invcurrenttransformationmatrix;
+    return this->invcurrenttransformationmatrix;
 }
 
 /*
@@ -465,32 +456,27 @@ void Camera::ViewportHeight(int new_viewport_height)
  * \param vup - the View Up vector.
  * \return - the computed ViewOrientation matrix.
  */
-void Camera::ComputeViewOrientation(glm::vec3& vrp, glm::vec3& vpn, glm::vec3& vup)
-{
+void Camera::ComputeViewOrientation(glm::vec3& vrp, glm::vec3& vpn, glm::vec3& vup) {
+    // translate
+    glm::mat4x4 t_vrp = glm::translate(-vrp);
 
-    // Translate to the origin translate for getting the tranlated eyecoordinate
-    glm ::mat4x4 T_vrp = glm::translate(-vrp);
+    std::cout << t_vrp;
 
-    std::cout << T_vrp;
-
-    // construct eye coordinate frame (u,v,n)
+    // construct eye coordinate frame
     glm::vec3 n(glm::normalize(vpn));
-    glm::vec3 u(glm::normalize(glm::cross(vup,vpn)));
-    glm::vec3 v(glm::normalize(glm::cross(n,u)));
+    glm::vec3 u(glm::normalize(glm::cross(vup, vpn)));
+    glm::vec3 v(glm::normalize(glm::cross(n, u)));
 
+    // rotate
+    glm::mat4x4 rotation(1.0f);
 
-    // laver matrix Rotate som skal indholde ( u, v, n) into (X, Y, Z) axes
-    glm::mat4x4 Rotation(1.0f);
+    // insert in rotated matrix
+    rotation = glm::row(rotation, 0, glm::vec4(u, 0.0f));
+    rotation = glm::row(rotation, 1, glm::vec4(v, 0.0f));
+    rotation = glm::row(rotation, 2, glm::vec4(n, 0.0f));
 
-    // indsætter dem i rotation matrix
-    Rotation = glm::row(Rotation, 0, glm::vec4(u,0.0f));
-    Rotation = glm::row(Rotation, 1, glm::vec4(v,0.0f));
-    Rotation = glm::row(Rotation, 2, glm::vec4(n,0.0f));
-
-    // The viewOrientation Matrix and its inverse
-    this->vieworientationmatrix = Rotation * T_vrp;
-    //this->invvieworientationmatrix = glm::translate(vrp)*glm::transpose(Rotation);
-
+    // viewOrientation matrix
+    this->vieworientationmatrix = rotation * t_vrp;
 }
 
 /*
@@ -502,66 +488,56 @@ void Camera::ComputeViewOrientation(glm::vec3& vrp, glm::vec3& vpn, glm::vec3& v
  * \param back_clipping_plane - the z-coordinate of the back clipping plane.
  * \return - the computed ViewProjection matrix.
  */
-void Camera::ComputeViewProjection(glm::vec3& prp,
+void Camera::ComputeViewProjection(glm::vec3& prp, 
                    glm::vec2& lower_left_window, glm::vec2& upper_right_window,
-                   float front_clipping_plane, float back_clipping_plane)
-{
+                   float front_clipping_plane, float back_clipping_plane) {
+    // translate
+    glm::mat4x4 t_prp = glm::translate(-prp);
 
-    // Translate top of the view pyramid to the origin
-    glm::mat4x4 T_prp = glm::translate(-prp);
+    // compute direction of projection
+    glm::vec3 cw((lower_left_window + upper_right_window)/2.0f, 0.0f);
+    glm::vec3 dop(prp - cw);
 
-
-
-    // Compute the center of window and the direction of Projection
-    glm::vec3 CW((lower_left_window + upper_right_window)/2.0f, 0.0f);
-    glm::vec3 DOP(prp-CW);
-
-    // Computer the shear factors
+    // compute shear factors
     float shx = 0.0f;
     float shy = 0.0f;
-    if (DOP.z != 0.0f) {
-        shx = -DOP.x /DOP.z;
-        shy = -DOP.y /DOP.z;
+    if(dop.z != 0.0f) {
+        shx = - dop.x / dop.z;
+        shy = - dop.y / dop.z;
     }
 
-    // Generate the shear matrix SHxy
-    glm::mat4x4 SHxy(glm::shearXY(shx,shy));
+    // generate shear matrix
+    glm::mat4x4 shMat(glm::shearXY(shx, shy));
 
-    // Compute the scale factors and the scaling Matrix
+    // compute scale factor and matrix
     float sx = 2.0f * prp.z / (upper_right_window.x - lower_left_window.x);
     float sy = 2.0f * prp.z / (upper_right_window.y - lower_left_window.y);
-    float s = -1.0f / (back_clipping_plane - prp.z);
-    glm::mat4x4 S(glm::scale(glm::vec3(sx*s,sy*s,s)));
+    float s = - 1.0f / (back_clipping_plane - prp.z);
+    glm::mat4x4 S(glm::scale(glm::vec3(sx * s, sy * s, s)));
 
+    // compute the mPerPar matrix
+    float zMax = (front_clipping_plane - prp.z) / (back_clipping_plane - prp.z);
+    glm::mat4x4 mPerPar(glm::vec4(1.0f, 0.0f, 0.0f, 0.0f),
+                        glm::vec4(0.0f, 1.0f, 0.0f, 0.0f),
+                        glm::vec4(0.0f, 0.0f, 1.0f / (1.0f + zMax), -1.0f),
+                        glm::vec4(0.0f, 0.0f, - zMax / (1.0f + zMax), 0.0f));
 
-    // Compute the Mperpar Matrix
-    float Zmax = -(front_clipping_plane - prp.z)/ (back_clipping_plane - prp.z);
-    glm::mat4x4 Mperpar(glm::vec4(1.0f,0.0f, 0.0f,0.0f),
-                        glm::vec4(0.0f,1.0f,0.0f,0.0f),
-                        glm::vec4(0.0f,0.0f,1.0f/(1.0f+Zmax),-1.0f),
-                        glm::vec4(0.0f,0.0f,-Zmax/(1.0f+Zmax),0.0f));
+    // compute viewProjection matrix
+    this->vieworientationmatrix = mPerPar * S * shMat * t_prp;
 
+    std::cout << "translation matrix:" << std::endl << t_prp << std::endl;
+    std::cout << "scaling matrix:" << std::endl << S << std::endl;
+    std::cout << "shear matrix:" << std::endl << shMat << std::endl;
+    std::cout << "perspective parallel matrix" << std::endl << mPerPar << std::endl; 
 
-    // Compute the viewProjection Matrix
-    this->viewprojectionmatrix = Mperpar * S * SHxy * T_prp;
+    glm::mat4x4 invS = glm::scale(glm::vec3(1.0f / (sx * s), 1.0f / (sy * s), 1.0f / s));
 
-    std::cout << "transmatrix"  << std::endl << T_prp << std::endl;
-    std::cout << "skalering" << std::endl << S << std::endl;
-    std::cout << "shxy" << std::endl<< SHxy << std::endl;
-    std::cout << "mperpar"  << std::endl << Mperpar << std::endl;
+    glm::mat4x4 invmPerPar(glm::vec4(1.0f, 0.0f, 0.0f, 0.0f),
+                           glm::vec4(0.0f, 1.0f, 0.0f, 0.0f),
+                           glm::vec4(0.0f, 0.0f, 0.0f, (-1.0f + zMax) / zMax),
+                           glm::vec4(0.0f, 0.0f, - 1.0f, - 1.0f / zMax));
 
-
-
-    glm::mat4x4 invS = glm::scale(glm::vec3(1.0f / (sx * s), 1.0f /(sy*s), 1.0f /s));
-
-    glm::mat4x4 invMperpar (glm::vec4(1.0f, 0.0f, 0.0f, 0.0f),
-                            glm::vec4(0.0f, 1.0f, 0.0f, 0.0f),
-                            glm::vec4(0.0f, 0.0f, 0.0f, (-1.0f + Zmax)/Zmax),
-                            glm::vec4(0.0f, 0.0f, -1.0f, -1.0f/Zmax));
-
-    this->invviewprojectionmatrix = glm::translate(prp)* glm::shearXY(-shx,-shy) * invS * invMperpar;
-
-
+    this->invviewprojectionmatrix = glm::translate(prp) * glm::shearXY(- shx, - shy) * invS * invmPerPar;
 }
 
 /*
@@ -583,7 +559,7 @@ void Camera::ComputeWindowViewport(float x_viewport, float y_viewport, float vie
 
     // Not needed because OpenGL does the window viewport mapping
     return;
-
+    
     // But I have implemented it so I can have more figures in one window.
 
     // Translate (-1, -1, 0) to the origin (0, 0, 0)
